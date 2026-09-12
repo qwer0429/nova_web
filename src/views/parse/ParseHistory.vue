@@ -106,28 +106,10 @@
       <el-table-column label="创建人" width="110">
         <template #default="{ row }">{{ row.creator || auth.username || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="130" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" :icon="View" @click="openDetail(row)">
             查看结果
-          </el-button>
-          <el-button
-            v-if="row.task_type === 'single_page'"
-            link
-            type="warning"
-            :icon="Stamp"
-            @click="openAuditResult(row)"
-          >
-            审核结果
-          </el-button>
-          <el-button
-            v-if="row.task_type === 'cross_page'"
-            link
-            type="success"
-            :icon="Connection"
-            @click="openCrossResult(row)"
-          >
-            交叉审核
           </el-button>
         </template>
       </el-table-column>
@@ -157,7 +139,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Delete, Upload, Folder, View, Stamp, Connection } from '@element-plus/icons-vue'
+import { Search, Delete, Upload, Folder, View } from '@element-plus/icons-vue'
 import request from '../../api/request'
 import { useAuthStore } from '../../stores/auth'
 import { TASK_TYPES, STATUS_OPTIONS, STATUS_META } from '../../constants'
@@ -252,15 +234,14 @@ function onClear() {
 }
 
 function openDetail(row) {
-  router.push(`/parse/result/${row.id}`)
-}
-
-function openAuditResult(row) {
-  router.push(`/parse/single-result/${row.id}`)
-}
-
-function openCrossResult(row) {
-  router.push(`/parse/cross-result/${row.id}`)
+  // 默认展示审核结果；无比对类审核页的类型进入解析结果
+  if (row.task_type === 'single_page') {
+    router.push(`/parse/single-result/${row.id}`)
+  } else if (row.task_type === 'cross_page') {
+    router.push(`/parse/cross-result/${row.id}`)
+  } else {
+    router.push(`/parse/result/${row.id}`)
+  }
 }
 
 onMounted(loadTasks)

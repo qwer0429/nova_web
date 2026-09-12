@@ -13,6 +13,12 @@
       </div>
     </div>
 
+    <!-- 结果切换：解析结果 / 审核结果 -->
+    <el-tabs model-value="parse" class="result-tabs" @tab-click="onTabClick">
+      <el-tab-pane label="解析结果" name="parse" />
+      <el-tab-pane label="审核结果" name="audit" :disabled="!canAudit" />
+    </el-tabs>
+
     <div v-loading="loading" class="page-card result-card">
       <template v-if="detail">
         <!-- 任务信息条 -->
@@ -121,9 +127,10 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { Back, Folder, Grid, Download, CopyDocument } from '@element-plus/icons-vue'
 import request from '../../api/request'
+import { ensureSinglePageAudit } from '../../api/audit'
 import { STATUS_META } from '../../constants'
 
 const route = useRoute()
@@ -131,6 +138,54 @@ const router = useRouter()
 
 const loading = ref(false)
 const detail = ref(null)
+
+// 仅单页/交叉审核类型有审核结果页
+const canAudit = computed(() =>
+  ['single_page', 'cross_page'].includes(detail.value?.task_type)
+)
+
+function onTabClick(tab) {
+  if (tab.paneName !== 'audit' || !detail.value) return
+  const path =
+    detail.value.task_type === 'cross_page'
+      ? `/parse/cross-result/${route.params.id}`
+      : `/parse/single-result/${route.params.id}`
+  router.push(path)
+}
+
+// 解析成功后自动执行审核（接口在任务无分页时会先自动拆分）
+async function maybeAutoAudit() {
+  const t = detail.value
+  if (t?.status !== 'success' || t?.task_type !== 'single_page') return
+  const pagesRes = await request
+    .get(`/dp/single-page/${route.params.id}/pages/`)
+    .catch(() => null)
+  const pages = pagesRes?.data?.pages || []
+  if (pages.length) {
+    // 已有分页：抽查首页，已有审核结果则不再重复审核
+    const first = await request
+      .get(`/dp/single-page/pages/${pages[0].id}/`)
+      .catch(() => null)
+    const ar = first?.data?.page?.audit_result
+    if (ar && typeof ar === 'object' && Object.keys(ar).length) return
+  }
+  ElNotification({
+    title: '自动审核中',
+    message: '解析成功，正在自动拆分分页并逐页审核，完成后可在「审核结果」中查看',
+    type: 'info',
+    duration: 8000
+  })
+  ensureSinglePageAudit(route.params.id)
+    .then(() => {
+      ElNotification({
+        title: '审核完成',
+        message: '单页审核已完成，切换到「审核结果」即可查看',
+        type: 'success',
+        duration: 6000
+      })
+    })
+    .catch(() => {})
+}
 
 const layout = computed(() => {
   const l = detail.value?.dp_layout
@@ -307,6 +362,7 @@ async function loadDetail() {
   try {
     const { data } = await request.get(`/dp/tasks/${route.params.id}/`)
     detail.value = data.task
+    maybeAutoAudit()
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '加载任务详情失败')
   } finally {
@@ -323,7 +379,16 @@ onMounted(loadDetail)
 }
 
 .page-head {
-  margin-bottom: 22px;
+  margin-bottom: 8px;
+}
+
+.result-tabs {
+  margin-bottom: 16px;
+}
+
+.result-tabs :deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .head-left {

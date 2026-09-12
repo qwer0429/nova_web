@@ -18,6 +18,12 @@
       </el-button>
     </div>
 
+    <!-- 结果切换：解析结果 / 审核结果 -->
+    <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
+      <el-tab-pane label="解析结果" name="parse" />
+      <el-tab-pane label="审核结果" name="audit" />
+    </el-tabs>
+
     <!-- 任务信息卡 -->
     <div v-loading="loading" class="page-card info-card">
       <el-skeleton v-if="loading && !task" :rows="3" animated />
@@ -233,6 +239,12 @@ const router = useRouter()
 
 const taskId = route.params.id
 
+function onTabClick(tab) {
+  if (tab.paneName === 'parse') {
+    router.push(`/parse/result/${taskId}`)
+  }
+}
+
 const loading = ref(false)
 const comparing = ref(false)
 
@@ -411,7 +423,16 @@ onMounted(loadTask)
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 8px;
+}
+
+.result-tabs {
+  margin-bottom: 16px;
+}
+
+.result-tabs :deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .head-left {

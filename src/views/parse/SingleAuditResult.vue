@@ -17,12 +17,18 @@
         type="primary"
         :icon="VideoPlay"
         :loading="auditing"
-        :disabled="!pages.length"
+        :disabled="!!task && task.status !== 'success'"
         @click="runAudit"
       >
         {{ hasAnyResult ? '重新执行审核' : '执行审核' }}
       </el-button>
     </div>
+
+    <!-- 结果切换：解析结果 / 审核结果 -->
+    <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
+      <el-tab-pane label="解析结果" name="parse" />
+      <el-tab-pane label="审核结果" name="audit" />
+    </el-tabs>
 
     <!-- 任务信息卡 -->
     <div v-loading="loading" class="page-card info-card">
@@ -67,12 +73,22 @@
     <!-- 分页结果区 -->
     <div v-loading="detailsLoading" class="pages-area" element-loading-text="加载分页详情…">
       <template v-if="!loading">
-        <!-- 尚未拆分分页 -->
+        <!-- 尚未拆分分页：执行审核时自动拆分 -->
         <div v-if="!pages.length" class="page-card empty-card">
-          <el-empty description="该任务尚未拆分分页" :image-size="110">
-            <el-button type="primary" :icon="Scissor" :loading="splitting" @click="splitPages">
-              拆分分页
+          <el-empty
+            :description="auditing ? '正在自动拆分分页并逐页审核，请稍候…' : '该任务尚未执行审核'"
+            :image-size="110"
+          >
+            <el-button
+              type="primary"
+              :icon="VideoPlay"
+              :loading="auditing"
+              :disabled="!!task && task.status !== 'success'"
+              @click="runAudit"
+            >
+              {{ auditing ? '审核中' : '执行审核' }}
             </el-button>
+            <p v-if="!auditing" class="empty-hint">将自动拆分分页，并逐页执行单页审核</p>
           </el-empty>
         </div>
 
@@ -391,7 +407,6 @@ import {
   VideoPlay,
   Picture,
   Loading,
-  Scissor,
   InfoFilled,
   Stamp,
   CircleCheck,
@@ -400,6 +415,7 @@ import {
   WarningFilled
 } from '@element-plus/icons-vue'
 import request from '../../api/request'
+import { ensureSinglePageAudit } from '../../api/audit'
 import { STATUS_META } from '../../constants'
 
 const route = useRoute()
@@ -407,9 +423,14 @@ const router = useRouter()
 
 const taskId = route.params.id
 
+function onTabClick(tab) {
+  if (tab.paneName === 'parse') {
+    router.push(`/parse/result/${taskId}`)
+  }
+}
+
 const loading = ref(false)
 const detailsLoading = ref(false)
-const splitting = ref(false)
 const auditing = ref(false)
 
 const task = ref(null)
@@ -565,6 +586,9 @@ async function loadAll() {
     loading.value = false
     if (pages.value.length) {
       loadPageDetails()
+    } else if (task.value?.status === 'success') {
+      // 解析成功但尚未审核：自动执行（接口会先自动拆分分页）
+      runAudit()
     }
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '加载任务信息失败')
@@ -593,33 +617,20 @@ async function loadPageDetails() {
   }
 }
 
-async function splitPages() {
-  splitting.value = true
-  try {
-    const { data } = await request.post('/dp/single-page/split/', { id: taskId })
-    pages.value = data.pages || []
-    if (pages.value.length) {
-      ElMessage.success(`拆分成功，共 ${data.page_count ?? pages.value.length} 页`)
-      await loadPageDetails()
-    } else {
-      ElMessage.warning('拆分完成，但未返回分页数据')
-    }
-  } catch (e) {
-    ElMessage.error(e.response?.data?.detail || '拆分分页失败')
-  } finally {
-    splitting.value = false
-  }
-}
-
 async function runAudit() {
+  if (auditing.value) return
   auditing.value = true
   try {
-    // 审核可能较慢，单独放大超时时间
-    const { data } = await request.post(
-      '/dp/single-page/audit/',
-      { id: taskId },
-      { timeout: 300000 }
-    )
+    // 审核可能较慢，单独放大超时时间；任务无分页时接口会自动拆分
+    const { data } = await ensureSinglePageAudit(taskId)
+    // 自动拆分场景：补充分页列表与页面详情，再叠加审核结果
+    if (!pages.value.length) {
+      const pagesRes = await request
+        .get(`/dp/single-page/${taskId}/pages/`)
+        .catch(() => null)
+      pages.value = pagesRes?.data?.pages || []
+      await loadPageDetails()
+    }
     const byId = {}
     ;(data.pages || []).forEach((p) => {
       if (p.page_id != null) byId[p.page_id] = p.audit_result
@@ -654,7 +665,16 @@ onMounted(loadAll)
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 8px;
+}
+
+.result-tabs {
+  margin-bottom: 16px;
+}
+
+.result-tabs :deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .head-left {
@@ -824,6 +844,12 @@ onMounted(loadAll)
 
 .empty-card {
   padding: 30px;
+}
+
+.empty-hint {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-300);
 }
 
 .guide-banner {

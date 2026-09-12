@@ -150,10 +150,6 @@ function onReset() {
 </script>
 
 <style scoped>
-.new-parse {
-  max-width: 960px;
-}
-
 /* 页面标题区 */
 .page-head {
   margin-bottom: 22px;

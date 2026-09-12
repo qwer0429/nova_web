@@ -43,10 +43,6 @@ function tagType(color) {
 </script>
 
 <style scoped>
-.type-config {
-  max-width: 960px;
-}
-
 .page-head {
   margin-bottom: 22px;
 }
