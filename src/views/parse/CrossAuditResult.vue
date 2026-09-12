@@ -18,10 +18,10 @@
       </el-button>
     </div>
 
-    <!-- 结果切换：解析结果 / 审核结果 -->
+    <!-- 结果切换：审核结果 / 解析结果（解析结果标签页暂时隐藏） -->
     <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
-      <el-tab-pane label="解析结果" name="parse" />
       <el-tab-pane label="审核结果" name="audit" />
+      <!-- <el-tab-pane label="解析结果" name="parse" /> -->
     </el-tabs>
 
     <!-- 任务信息卡 -->

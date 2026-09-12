@@ -136,14 +136,14 @@ const apps = [
     color: 'blue',
     cover: CoverSingle
   },
-  {
-    type: 'cross_page',
-    title: '交叉审核',
-    tags: ['跨页关联', '一致性校验', '多页文档'],
-    desc: '对多页合同、标书、申报材料进行跨页关联分析，自动校验前后要素一致性，发现潜在矛盾点。',
-    color: 'purple',
-    cover: CoverCross
-  },
+  // {
+  //   type: 'cross_page',
+  //   title: '交叉审核',
+  //   tags: ['跨页关联', '一致性校验', '多页文档'],
+  //   desc: '对多页合同、标书、申报材料进行跨页关联分析，自动校验前后要素一致性，发现潜在矛盾点。',
+  //   color: 'purple',
+  //   cover: CoverCross
+  // },
   {
     type: 'compare',
     title: '比对审核',

@@ -42,7 +42,7 @@ const routes = [
         path: 'result/:id',
         name: 'parse-result',
         component: () => import('../views/parse/ParseResult.vue'),
-        meta: { requiresAuth: true, title: '解析结果' }
+        meta: { requiresAuth: true, title: '审核结果' }
       },
       {
         path: 'single-result/:id',

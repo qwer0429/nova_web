@@ -24,10 +24,10 @@
       </el-button>
     </div>
 
-    <!-- 结果切换：解析结果 / 审核结果 -->
+    <!-- 结果切换：审核结果 / 解析结果（解析结果标签页暂时隐藏） -->
     <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
-      <el-tab-pane label="解析结果" name="parse" />
       <el-tab-pane label="审核结果" name="audit" />
+      <!-- <el-tab-pane label="解析结果" name="parse" /> -->
     </el-tabs>
 
     <!-- 任务信息卡 -->
@@ -586,8 +586,8 @@ async function loadAll() {
     loading.value = false
     if (pages.value.length) {
       loadPageDetails()
-    } else if (task.value?.status === 'success') {
-      // 解析成功但尚未审核：自动执行（接口会先自动拆分分页）
+    } else if (task.value?.status === 'success' && task.value?.task_type === 'single_page') {
+      // 仅单页审核类型解析成功且尚未审核时自动执行（接口会先自动拆分分页），其他类型暂不处理
       runAudit()
     }
   } catch (e) {
@@ -619,6 +619,7 @@ async function loadPageDetails() {
 
 async function runAudit() {
   if (auditing.value) return
+  if (task.value && task.value.task_type !== 'single_page') return
   auditing.value = true
   try {
     // 审核可能较慢，单独放大超时时间；任务无分页时接口会自动拆分

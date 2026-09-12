@@ -264,6 +264,14 @@ async function handle(config) {
     return ok({ count, results }, 200, config)
   }
 
+  // DP token（内嵌 DP 结果页用）
+  if (method === 'get' && path === '/api/dp/token/') {
+    return ok({
+      access_token: `mock-dp-token-${Date.now()}`,
+      refresh_token: `mock-dp-refresh-${Date.now()}`
+    }, 200, config)
+  }
+
   // 任务详情
   const detailMatch = path.match(/^\/api\/dp\/tasks\/(\d+)\/$/)
   if (method === 'get' && detailMatch) {

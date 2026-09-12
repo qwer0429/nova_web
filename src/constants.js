@@ -6,12 +6,12 @@ export const TASK_TYPES = [
     desc: '对单页文档进行版面解析与要素审核，适用于单据、证件、单页合同等独立页面文档。',
     color: 'blue'
   },
-  {
-    value: 'cross_page',
-    label: '交叉审核',
-    desc: '对多页文档进行跨页关联分析与一致性校验，适用于多页合同、标书、申报材料等。',
-    color: 'purple'
-  },
+  // {
+  //   value: 'cross_page',
+  //   label: '交叉审核',
+  //   desc: '对多页文档进行跨页关联分析与一致性校验，适用于多页合同、标书、申报材料等。',
+  //   color: 'purple'
+  // },
   {
     value: 'compare',
     label: '比对审核',
