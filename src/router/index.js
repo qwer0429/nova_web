@@ -55,6 +55,12 @@ const routes = [
         name: 'parse-cross-result',
         component: () => import('../views/parse/CrossAuditResult.vue'),
         meta: { requiresAuth: true, title: '交叉审核结果' }
+      },
+      {
+        path: 'compare-result/:id',
+        name: 'parse-compare-result',
+        component: () => import('../views/parse/CompareAuditResult.vue'),
+        meta: { requiresAuth: true, title: '比对审核结果' }
       }
     ]
   },

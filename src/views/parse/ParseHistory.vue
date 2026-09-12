@@ -234,11 +234,13 @@ function onClear() {
 }
 
 function openDetail(row) {
-  // 默认展示审核结果；无比对类审核页的类型进入解析结果
+  // 默认展示审核结果；无对应审核页的类型进入解析结果
   if (row.task_type === 'single_page') {
     router.push(`/parse/single-result/${row.id}`)
   } else if (row.task_type === 'cross_page') {
     router.push(`/parse/cross-result/${row.id}`)
+  } else if (row.task_type === 'compare') {
+    router.push(`/parse/compare-result/${row.id}`)
   } else {
     router.push(`/parse/result/${row.id}`)
   }

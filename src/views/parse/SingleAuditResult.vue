@@ -898,8 +898,8 @@ onMounted(loadAll)
 
 /* 页面图片 */
 .page-image {
-  width: 560px;
-  flex-shrink: 0;
+  flex: 0 0 45%;
+  min-width: 0;
   border: 1px solid #e9ecf5;
   border-radius: 12px;
   background: #f7f8fc;
@@ -908,13 +908,15 @@ onMounted(loadAll)
 
 .page-img {
   width: 100%;
-  height: 792px;
+  height: auto;
+  aspect-ratio: 1 / 1.414;
   display: block;
 }
 
 .img-placeholder {
   width: 100%;
-  height: 792px;
+  height: auto;
+  aspect-ratio: 1 / 1.414;
   display: flex;
   flex-direction: column;
   align-items: center;
