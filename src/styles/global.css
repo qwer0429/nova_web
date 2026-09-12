@@ -1,0 +1,263 @@
+/* ===================== 设计 Token ===================== */
+:root {
+  /* 品牌色板：蓝紫渐变系 */
+  --brand-500: #4f6ef7;
+  --brand-600: #3f58d9;
+  --brand-purple: #7c5cff;
+  --brand-gradient: linear-gradient(135deg, #4f6ef7 0%, #7c5cff 100%);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(79, 110, 247, 0.1), rgba(124, 92, 255, 0.1));
+
+  --ink-900: #1f2340;
+  --ink-600: #4a4f6a;
+  --ink-400: #8a8fa8;
+  --ink-300: #a8adc4;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 3px rgba(31, 35, 64, 0.06);
+  --shadow-card: 0 2px 10px rgba(31, 35, 64, 0.05), 0 12px 32px -12px rgba(31, 35, 64, 0.1);
+  --shadow-brand: 0 8px 20px -6px rgba(90, 92, 245, 0.45);
+
+  /* Element Plus 主色覆盖（#4f6ef7 色系） */
+  --el-color-primary: #4f6ef7;
+  --el-color-primary-light-3: #7f93f9;
+  --el-color-primary-light-5: #a7b7fb;
+  --el-color-primary-light-7: #cfd6fd;
+  --el-color-primary-light-8: #e0e4fe;
+  --el-color-primary-light-9: #eff1fe;
+  --el-color-primary-dark-2: #3f58d9;
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 999px;
+
+  /* 表格观感 */
+  --el-table-header-bg-color: #f7f8fd;
+  --el-table-header-text-color: #6b7194;
+  --el-table-row-hover-bg-color: #f4f6ff;
+  --el-table-border-color: #eef0f7;
+  --el-table-text-color: #3d4260;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, 'Microsoft YaHei',
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #f4f6fc;
+  color: var(--ink-900);
+}
+
+::selection {
+  background: rgba(79, 110, 247, 0.16);
+}
+
+/* 细滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 126, 170, 0.28);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 126, 170, 0.45);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ===================== Element Plus 细化 ===================== */
+
+/* 主按钮：渐变 + 阴影 */
+.el-button {
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.el-button--primary:not(.is-link):not(.is-text) {
+  background: var(--brand-gradient);
+  border: none;
+  box-shadow: var(--shadow-brand);
+}
+.el-button--primary:not(.is-link):not(.is-text):hover,
+.el-button--primary:not(.is-link):not(.is-text):focus {
+  background: linear-gradient(135deg, #6280f8 0%, #8d70ff 100%);
+  border: none;
+  box-shadow: 0 10px 24px -6px rgba(90, 92, 245, 0.55);
+  transform: translateY(-1px);
+}
+.el-button--primary:not(.is-link):not(.is-text):active {
+  background: linear-gradient(135deg, #3f58d9 0%, #6a48e8 100%);
+  border: none;
+  transform: translateY(0);
+}
+.el-button--primary:not(.is-link):not(.is-text).is-disabled,
+.el-button--primary:not(.is-link):not(.is-text).is-disabled:hover {
+  background: linear-gradient(135deg, #b9c2f7 0%, #c9bdfb 100%);
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+.el-button:not(.is-link):not(.is-text):not(.el-button--primary):hover {
+  transform: translateY(-1px);
+}
+
+/* 链接按钮 / 文本按钮主色 */
+.el-button--primary.is-link,
+.el-button--primary.is-text {
+  color: var(--brand-500);
+}
+
+/* 输入框 / 选择器 hover & focus 质感 */
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-color-primary-light-5) inset;
+}
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--brand-500) inset, 0 0 0 3px rgba(79, 110, 247, 0.12);
+}
+
+/* 表格：表头、行 hover、圆角衔接 */
+.el-table {
+  --el-table-header-bg-color: #f7f8fd;
+  font-size: 13.5px;
+}
+.el-table th.el-table__cell {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  height: 46px;
+}
+.el-table .el-table__row {
+  transition: background 0.15s ease;
+}
+.el-table--border,
+.el-table {
+  border-radius: 0;
+}
+
+/* 标签：更柔和的 pill 观感 */
+.el-tag {
+  border-radius: 999px;
+  font-weight: 500;
+  border: none;
+}
+.el-tag--primary {
+  background: var(--el-color-primary-light-9);
+  color: var(--brand-500);
+}
+.el-tag--success {
+  background: #e7f8ef;
+  color: #18a058;
+}
+.el-tag--danger {
+  background: #fdecec;
+  color: #e14b4b;
+}
+.el-tag--info {
+  background: #eef0f6;
+  color: #7a7f99;
+}
+.el-tag--warning {
+  background: #f1ebff;
+  color: #7c5cff;
+}
+
+/* 分页 */
+.el-pagination.is-background .el-pager li {
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.el-pagination.is-background .el-pager li.is-active {
+  background: var(--brand-gradient);
+  box-shadow: 0 4px 10px -2px rgba(90, 92, 245, 0.4);
+}
+
+/* 表单标签 */
+.el-form-item__label {
+  font-weight: 600;
+  color: var(--ink-600);
+  padding-bottom: 8px !important;
+}
+
+/* 抽屉圆角与标题 */
+.el-drawer {
+  border-radius: 16px 0 0 16px;
+}
+.el-drawer__title {
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+/* 弹层/下拉 */
+.el-dropdown-menu {
+  border-radius: 10px;
+  padding: 6px;
+}
+.el-dropdown-menu__item {
+  border-radius: 6px;
+}
+
+/* ===================== 应用中心 / 登录页 极光渐变背景 ===================== */
+.aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 12% 8%, rgba(196, 181, 253, 0.55), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 88% 12%, rgba(147, 197, 253, 0.55), transparent 65%),
+    radial-gradient(ellipse 50% 45% at 80% 85%, rgba(249, 168, 212, 0.45), transparent 65%),
+    radial-gradient(ellipse 55% 50% at 15% 88%, rgba(165, 243, 252, 0.5), transparent 65%),
+    linear-gradient(135deg, #f6f2ff 0%, #eef3ff 35%, #fdf2f8 70%, #effaff 100%);
+}
+
+/* 控制台内容区背景：浅渐变 + 光晕 + 细网格 */
+.console-bg {
+  background:
+    radial-gradient(ellipse 45% 32% at 85% 0%, rgba(124, 92, 255, 0.07), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 8% 6%, rgba(79, 110, 247, 0.08), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 50% 110%, rgba(56, 189, 248, 0.06), transparent 70%),
+    linear-gradient(rgba(79, 110, 247, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 110, 247, 0.032) 1px, transparent 1px),
+    linear-gradient(180deg, #f7f8fd 0%, #f2f4fb 100%);
+  background-size: auto, auto, auto, 28px 28px, 28px 28px, auto;
+}
+
+/* 状态圆点 */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 3px rgba(120, 130, 170, 0.08);
+}
+
+/* 页面卡片 */
+.page-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-card);
+}
