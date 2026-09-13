@@ -101,7 +101,7 @@ async function loadDpResult() {
   }
 }
 
-// 仅单页/交叉审核类型有独立审核结果页，其他类型默认停留在本页展示「暂无审核结果」
+// 仅报告单/交叉审核类型有独立审核结果页，其他类型默认停留在本页展示「暂无审核结果」
 const canAudit = computed(() =>
   ['single_page', 'cross_page'].includes(detail.value?.task_type)
 )
@@ -141,7 +141,7 @@ async function maybeAutoAudit() {
     .then(() => {
       ElNotification({
         title: '审核完成',
-        message: '单页审核已完成，切换到「审核结果」即可查看',
+        message: '报告单审核已完成，切换到「审核结果」即可查看',
         type: 'success',
         duration: 6000
       })

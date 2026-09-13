@@ -7,9 +7,9 @@ const STATUS_DISPLAY = {
 }
 
 const TYPE_DISPLAY = {
-  single_page: '单页审核',
+  single_page: '报告单审核',
   cross_page: '交叉审核',
-  compare: '比对审核'
+  compare: '标准页审核'
 }
 
 const FILE_NAMES = [
@@ -190,6 +190,28 @@ function fullPath(config) {
   return (base + config.url).replace(/^https?:\/\/[^/]+/i, '')
 }
 
+// ---- 标准页审核「查看版面」演示 HTML ----
+function layoutHtmlFix() {
+  return [
+    '<table>',
+    '<tr><th>项目</th><th>规定值</th><th>实测值</th><th>判定</th></tr>',
+    '<tr><td>页边距（上）</td><td>37mm±1mm</td><td>37mm</td><td>合格</td></tr>',
+    '<tr><td>页边距（下）</td><td>35mm±1mm</td><td>34mm</td><td>合格</td></tr>',
+    '<tr><td>行数</td><td>每页 22 行</td><td>22 行</td><td>合格</td></tr>',
+    '</table>'
+  ].join('')
+}
+
+function layoutHtmlRaw() {
+  return [
+    '<table>',
+    '<tr><th>项目</th><th>规定值</th><th>实测值</th></tr>',
+    '<tr><td>发文机关标志</td><td>居中排布</td><td>居中排布</td></tr>',
+    '<tr><td>标题字体</td><td>二号小标宋体</td><td>二号小标宋体</td></tr>',
+    '</table>'
+  ].join('')
+}
+
 async function handle(config) {
   const path = fullPath(config)
   const method = (config.method || 'get').toLowerCase()
@@ -283,11 +305,55 @@ async function handle(config) {
       detail.dp_tables = sampleDpTables(detail)
       // 版面还原数据：任务 1 返回完整试验报告版面，其余 success 任务给简单版面
       detail.dp_layout = detail.id === 1 ? reportLayout() : simpleLayout(detail)
+      // 标准页审核任务的「查看版面」数据：部分任务只有未修正版本，演示回退逻辑
+      if (detail.task_type === 'compare') {
+        detail.table_json_to_html_fix = detail.id % 2 ? layoutHtmlFix() : ''
+        detail.table_json_to_html = layoutHtmlRaw()
+      }
     }
     if (detail.status === 'failed') {
       detail.dp_tables = null
     }
     return ok({ task: detail }, 200, config)
+  }
+
+  // 报告单审核：分页列表
+  const pageListMatch = path.match(/^\/api\/dp\/single-page\/(\d+)\/pages\/$/)
+  if (method === 'get' && pageListMatch) {
+    const taskId = parseInt(pageListMatch[1], 10)
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) fail({ detail: '未找到该任务' }, 404, config)
+    if (task.task_type !== 'single_page' || task.status !== 'success') {
+      return ok({ pages: [] }, 200, config)
+    }
+    return ok({
+      pages: [
+        { id: taskId * 100 + 1, page_num: 1, task: taskId },
+        { id: taskId * 100 + 2, page_num: 2, task: taskId }
+      ]
+    }, 200, config)
+  }
+
+  // 报告单审核：分页详情（第 1 页有修正版，第 2 页演示回退）
+  const pageDetailMatch = path.match(/^\/api\/dp\/single-page\/pages\/(\d+)\/$/)
+  if (method === 'get' && pageDetailMatch) {
+    const pageId = parseInt(pageDetailMatch[1], 10)
+    const pageNum = pageId % 100
+    return ok({
+      page: {
+        id: pageId,
+        page_num: pageNum,
+        page_file_path: '',
+        table_json_to_html_fix: pageNum === 1 ? layoutHtmlFix() : '',
+        table_json_to_html: layoutHtmlRaw(),
+        audit_result: null
+      }
+    }, 200, config)
+  }
+
+  // 报告单审核触发
+  if (method === 'post' && path === '/api/dp/single-page/audit/') {
+    return ok({ result: '通过', pages: [] }, 200, config)
   }
 
   fail({ detail: `Mock 未实现的接口: ${method.toUpperCase()} ${path}` }, 404, config)

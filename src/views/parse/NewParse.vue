@@ -2,7 +2,7 @@
   <div class="new-parse">
     <!-- 页面标题区 -->
     <div class="page-head">
-      <h1 class="page-title">新建解析</h1>
+      <h1 class="page-title">新建审核</h1>
       <p class="page-desc">选择审核类型并上传文档，AI 将自动完成版面解析与要素审核</p>
     </div>
 

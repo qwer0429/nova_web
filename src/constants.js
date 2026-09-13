@@ -2,7 +2,7 @@
 export const TASK_TYPES = [
   {
     value: 'single_page',
-    label: '单页审核',
+    label: '报告单审核',
     desc: '对单页文档进行版面解析与要素审核，适用于单据、证件、单页合同等独立页面文档。',
     color: 'blue'
   },
@@ -14,7 +14,7 @@ export const TASK_TYPES = [
   // },
   {
     value: 'compare',
-    label: '比对审核',
+    label: '标准页审核',
     desc: '对两份或多份文档进行差异比对，识别内容不一致项，适用于合同版本比对等场景。',
     color: 'green'
   }

@@ -10,9 +10,7 @@ const routes = [
   },
   {
     path: '/',
-    name: 'app-center',
-    component: () => import('../views/AppCenter.vue'),
-    meta: { requiresAuth: true, title: '应用中心' }
+    redirect: '/parse'
   },
   {
     path: '/parse',
@@ -24,19 +22,13 @@ const routes = [
         path: 'new',
         name: 'parse-new',
         component: () => import('../views/parse/NewParse.vue'),
-        meta: { requiresAuth: true, title: '新建解析' }
+        meta: { requiresAuth: true, title: '新建审核' }
       },
       {
         path: 'history',
         name: 'parse-history',
         component: () => import('../views/parse/ParseHistory.vue'),
-        meta: { requiresAuth: true, title: '解析历史' }
-      },
-      {
-        path: 'types',
-        name: 'parse-types',
-        component: () => import('../views/parse/TypeConfig.vue'),
-        meta: { requiresAuth: true, title: '类型配置' }
+        meta: { requiresAuth: true, title: '审核历史' }
       },
       {
         path: 'result/:id',
@@ -48,7 +40,7 @@ const routes = [
         path: 'single-result/:id',
         name: 'parse-single-result',
         component: () => import('../views/parse/SingleAuditResult.vue'),
-        meta: { requiresAuth: true, title: '单页审核结果' }
+        meta: { requiresAuth: true, title: '报告单审核结果' }
       },
       {
         path: 'cross-result/:id',
@@ -60,7 +52,7 @@ const routes = [
         path: 'compare-result/:id',
         name: 'parse-compare-result',
         component: () => import('../views/parse/CompareAuditResult.vue'),
-        meta: { requiresAuth: true, title: '比对审核结果' }
+        meta: { requiresAuth: true, title: '标准页审核结果' }
       }
     ]
   },
@@ -88,7 +80,7 @@ router.beforeEach(async (to) => {
     return { path: '/login', query: { redirect: to.fullPath } }
   }
   if (to.path === '/login' && auth.isLoggedIn) {
-    return { path: '/' }
+    return { path: '/parse' }
   }
   document.title = to.meta.title
     ? `${to.meta.title} · Nova 智能文档审核平台`

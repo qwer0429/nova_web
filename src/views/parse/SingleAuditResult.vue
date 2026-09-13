@@ -7,7 +7,7 @@
           <el-icon :size="16"><Back /></el-icon>
         </div>
         <div>
-          <h1 class="page-title">单页审核结果</h1>
+          <h1 class="page-title">报告单审核结果</h1>
           <p class="page-desc">
             {{ task?.file_name || '加载中…' }}<template v-if="task?.file_name"> · </template>任务ID：{{ taskId }}
           </p>
@@ -24,14 +24,30 @@
       </el-button>
     </div>
 
-    <!-- 结果切换：审核结果 / 解析结果（解析结果标签页暂时隐藏） -->
-    <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
+    <!-- 结果切换：审核结果 / 查看版面（解析结果标签页暂时隐藏） -->
+    <el-tabs v-model="activeTab" class="result-tabs" @tab-click="onTabClick">
       <el-tab-pane label="审核结果" name="audit" />
+      <el-tab-pane label="查看版面" name="layout" />
       <!-- <el-tab-pane label="解析结果" name="parse" /> -->
     </el-tabs>
 
+    <!-- 查看版面：优先渲染 table_json_to_html_fix，无值时回退 table_json_to_html -->
+    <div v-show="activeTab === 'layout'" v-loading="detailsLoading" class="layout-area">
+      <template v-if="pageRows.length">
+        <div v-for="row in pageRows" :key="row.id" class="page-card layout-card">
+          <div class="pane-title">第 {{ row.page_num }} 页</div>
+          <div v-if="layoutHtmlOf(row)" class="layout-content" v-html="layoutHtmlOf(row)"></div>
+          <el-empty v-else description="该页暂无版面数据" :image-size="90" />
+        </div>
+      </template>
+      <div v-else class="page-card layout-card">
+        <div v-if="taskLayoutHtml" class="layout-content" v-html="taskLayoutHtml"></div>
+        <el-empty v-else description="暂无版面数据" :image-size="100" />
+      </div>
+    </div>
+
     <!-- 任务信息卡 -->
-    <div v-loading="loading" class="page-card info-card">
+    <div v-show="activeTab === 'audit'" v-loading="loading" class="page-card info-card">
       <el-skeleton v-if="loading && !task" :rows="3" animated />
       <template v-else-if="task">
         <div class="task-bar">
@@ -71,7 +87,12 @@
     </div>
 
     <!-- 分页结果区 -->
-    <div v-loading="detailsLoading" class="pages-area" element-loading-text="加载分页详情…">
+    <div
+      v-show="activeTab === 'audit'"
+      v-loading="detailsLoading"
+      class="pages-area"
+      element-loading-text="加载分页详情…"
+    >
       <template v-if="!loading">
         <!-- 尚未拆分分页：执行审核时自动拆分 -->
         <div v-if="!pages.length" class="page-card empty-card">
@@ -88,7 +109,7 @@
             >
               {{ auditing ? '审核中' : '执行审核' }}
             </el-button>
-            <p v-if="!auditing" class="empty-hint">将自动拆分分页，并逐页执行单页审核</p>
+            <p v-if="!auditing" class="empty-hint">将自动拆分分页，并逐页执行报告单审核</p>
           </el-empty>
         </div>
 
@@ -96,7 +117,7 @@
           <!-- 全部未审核的引导空状态 -->
           <div v-if="!hasAnyResult && !detailsLoading" class="guide-banner">
             <el-icon :size="20"><InfoFilled /></el-icon>
-            <span class="guide-text">该任务尚未执行单页审核，点击右侧按钮生成审核结果</span>
+            <span class="guide-text">该任务尚未执行报告单审核，点击右侧按钮生成审核结果</span>
             <el-button type="primary" size="small" :loading="auditing" @click="runAudit">
               执行审核
             </el-button>
@@ -417,6 +438,9 @@ import {
 import request from '../../api/request'
 import { ensureSinglePageAudit } from '../../api/audit'
 import { STATUS_META } from '../../constants'
+import MarkdownIt from 'markdown-it'
+
+const md = new MarkdownIt({ html: true, linkify: true, breaks: true })
 
 const route = useRoute()
 const router = useRouter()
@@ -437,6 +461,31 @@ const task = ref(null)
 const pages = ref([])
 // 以分页 id 为键的详情（含 content / audit_result）
 const details = ref({})
+const activeTab = ref('audit')
+
+// ---------- 查看版面 ----------
+// 优先取修正版 table_json_to_html_fix，无值时回退 table_json_to_html；
+// 字段可能位于分页详情顶层或其 content 内
+function pickLayoutRaw(source) {
+  if (!source || typeof source !== 'object') return ''
+  return (
+    source.table_json_to_html_fix ||
+    source.content?.table_json_to_html_fix ||
+    source.table_json_to_html ||
+    source.content?.table_json_to_html ||
+    ''
+  )
+}
+
+function layoutHtmlOf(row) {
+  const raw = pickLayoutRaw(row?.detail) || pickLayoutRaw(task.value)
+  return raw ? md.render(raw) : ''
+}
+
+const taskLayoutHtml = computed(() => {
+  const raw = pickLayoutRaw(task.value)
+  return raw ? md.render(raw) : ''
+})
 
 const statusMeta = computed(() => STATUS_META[task.value?.status] || STATUS_META.pending)
 
@@ -587,7 +636,7 @@ async function loadAll() {
     if (pages.value.length) {
       loadPageDetails()
     } else if (task.value?.status === 'success' && task.value?.task_type === 'single_page') {
-      // 仅单页审核类型解析成功且尚未审核时自动执行（接口会先自动拆分分页），其他类型暂不处理
+      // 仅报告单审核类型解析成功且尚未审核时自动执行（接口会先自动拆分分页），其他类型暂不处理
       runAudit()
     }
   } catch (e) {
@@ -659,6 +708,44 @@ onMounted(loadAll)
 <style scoped>
 .single-audit-result {
   width: 100%;
+}
+
+/* 查看版面 */
+.layout-area {
+  min-height: 120px;
+}
+
+.layout-card {
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.layout-content {
+  font-size: 13.5px;
+  color: var(--ink-900);
+  line-height: 1.8;
+}
+
+.layout-content :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  background: #fff;
+}
+
+.layout-content :deep(th),
+.layout-content :deep(td) {
+  border: 1px solid #e6e9f2;
+  padding: 8px 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.layout-content :deep(th) {
+  background: #f7f8fd;
+  font-weight: 600;
+  color: var(--ink-600);
 }
 
 .page-head {

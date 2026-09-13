@@ -7,7 +7,7 @@
         <div class="brand">
           <div class="brand-logo">N</div>
           <div class="brand-meta">
-            <div class="brand-name">版面解析</div>
+            <div class="brand-name">审核任务</div>
             <div class="brand-sub">Document Intelligence</div>
           </div>
         </div>
@@ -34,7 +34,7 @@
     <div class="main">
       <header class="header">
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item>版面解析</el-breadcrumb-item>
+          <el-breadcrumb-item>审核任务</el-breadcrumb-item>
           <el-breadcrumb-item>{{ currentTitle }}</el-breadcrumb-item>
         </el-breadcrumb>
 
@@ -55,10 +55,7 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="home">
-                  <el-icon><HomeFilled /></el-icon>返回应用中心
-                </el-dropdown-item>
-                <el-dropdown-item command="logout" divided>
+                <el-dropdown-item command="logout">
                   <el-icon><SwitchButton /></el-icon>退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -85,8 +82,7 @@ import {
   Share,
   Bell,
   ArrowDown,
-  SwitchButton,
-  HomeFilled
+  SwitchButton
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '../../stores/auth'
 
@@ -95,12 +91,11 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const menus = [
-  { path: '/parse/new', label: '新建解析', icon: FolderAdd },
-  { path: '/parse/history', label: '解析历史', icon: List },
-  { path: '/parse/types', label: '类型配置', icon: Setting }
+  { path: '/parse/new', label: '新建审核', icon: FolderAdd },
+  { path: '/parse/history', label: '审核历史', icon: List }
 ]
 
-const currentTitle = computed(() => route.meta.title || '解析历史')
+const currentTitle = computed(() => route.meta.title || '审核历史')
 const avatarText = computed(() => (auth.username || 'U').slice(0, 1).toUpperCase())
 
 function isActive(path) {
@@ -115,8 +110,6 @@ function onCommand(cmd) {
   if (cmd === 'logout') {
     auth.logout()
     router.push('/login')
-  } else if (cmd === 'home') {
-    router.push('/')
   }
 }
 </script>

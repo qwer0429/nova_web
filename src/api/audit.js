@@ -1,6 +1,6 @@
 import request from './request'
 
-// 单页审核触发器：同一任务在审核进行中时复用同一个请求，避免重复调用
+// 报告单审核触发器：同一任务在审核进行中时复用同一个请求，避免重复调用
 const inflight = new Map()
 
 export function ensureSinglePageAudit(taskId) {
@@ -13,7 +13,7 @@ export function ensureSinglePageAudit(taskId) {
   return p
 }
 
-// 比对审核触发器：同上，审核进行中时复用同一个请求
+// 标准页审核触发器：同上，审核进行中时复用同一个请求
 export function ensureCompareAudit(taskId) {
   const key = `compare:${taskId}`
   if (inflight.has(key)) return inflight.get(key)

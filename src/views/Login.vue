@@ -4,7 +4,7 @@
       <div class="brand">
         <div class="brand-logo">N</div>
         <div class="brand-name">Nova · 智能文档审核平台</div>
-        <div class="brand-sub">智能文档审核 / 版面解析</div>
+        <div class="brand-sub">智能文档审核 / 审核任务</div>
       </div>
 
       <el-alert
@@ -68,7 +68,7 @@ async function onSubmit() {
   try {
     await auth.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push(route.query.redirect || '/')
+    router.push(route.query.redirect || '/parse')
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '登录失败，请稍后重试')
   } finally {

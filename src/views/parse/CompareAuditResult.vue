@@ -7,7 +7,7 @@
           <el-icon :size="16"><Back /></el-icon>
         </div>
         <div>
-          <h1 class="page-title">比对审核结果</h1>
+          <h1 class="page-title">标准页审核结果</h1>
           <p class="page-desc">
             {{ task?.file_name || '加载中…' }}<template v-if="task?.file_name"> · </template>任务ID：{{ taskId }}
           </p>
@@ -24,14 +24,21 @@
       </el-button>
     </div>
 
-    <!-- 结果切换：审核结果 / 解析结果（解析结果标签页暂时隐藏） -->
-    <el-tabs model-value="audit" class="result-tabs" @tab-click="onTabClick">
+    <!-- 结果切换：审核结果 / 查看版面（解析结果标签页暂时隐藏） -->
+    <el-tabs v-model="activeTab" class="result-tabs" @tab-click="onTabClick">
       <el-tab-pane label="审核结果" name="audit" />
+      <el-tab-pane label="查看版面" name="layout" />
       <!-- <el-tab-pane label="解析结果" name="parse" /> -->
     </el-tabs>
 
+    <!-- 查看版面：渲染 task.table_json_to_html_fix，无值时回退 table_json_to_html -->
+    <div v-show="activeTab === 'layout'" class="page-card layout-card">
+      <div v-if="layoutHtml" class="layout-content" v-html="layoutHtml"></div>
+      <el-empty v-else description="暂无版面数据" :image-size="100" />
+    </div>
+
     <!-- 任务信息卡 -->
-    <div v-loading="loading" class="page-card info-card">
+    <div v-show="activeTab === 'audit'" v-loading="loading" class="page-card info-card">
       <el-skeleton v-if="loading && !task" :rows="3" animated />
       <template v-else-if="task">
         <div class="task-bar">
@@ -82,7 +89,12 @@
     </div>
 
     <!-- 审核结果区：左原文件，右审核结果 -->
-    <div v-loading="auditing" class="split-area" element-loading-text="正在执行比对审核，请稍候…">
+    <div
+      v-show="activeTab === 'audit'"
+      v-loading="auditing"
+      class="split-area"
+      element-loading-text="正在执行标准页审核，请稍候…"
+    >
       <!-- 原文件 -->
       <div class="file-pane page-card">
         <div class="pane-title">原文件</div>
@@ -253,6 +265,9 @@ import {
 import request from '../../api/request'
 import { ensureCompareAudit } from '../../api/audit'
 import { STATUS_META } from '../../constants'
+import MarkdownIt from 'markdown-it'
+
+const md = new MarkdownIt({ html: true, linkify: true, breaks: true })
 
 const route = useRoute()
 const router = useRouter()
@@ -271,6 +286,13 @@ const auditing = ref(false)
 const task = ref(null)
 const auditResult = ref(null)
 const verdictFilter = ref('')
+const activeTab = ref('audit')
+
+// 查看版面：优先渲染 table_json_to_html_fix，无值时回退 table_json_to_html
+const layoutHtml = computed(() => {
+  const raw = task.value?.table_json_to_html_fix || task.value?.table_json_to_html || ''
+  return raw ? md.render(raw) : ''
+})
 
 const VERDICTS = ['合格', '不合格', '缺失', '存疑', '无法判定']
 
@@ -298,13 +320,13 @@ const filteredItems = computed(() =>
 )
 
 const emptyDesc = computed(() => {
-  if (auditing.value) return '正在执行比对审核，请稍候…'
+  if (auditing.value) return '正在执行标准页审核，请稍候…'
   if (!task.value) return '未找到该任务'
   if (task.value.status === 'processing' || task.value.status === 'pending') {
-    return '文档解析中，解析成功后将自动执行比对审核'
+    return '文档解析中，解析成功后将自动执行标准页审核'
   }
   if (task.value.status === 'failed') return '文档解析失败，无法执行审核'
-  return '该任务尚未执行比对审核'
+  return '该任务尚未执行标准页审核'
 })
 
 // ---------- 原文件 ----------
@@ -375,7 +397,7 @@ async function loadAll() {
     loading.value = false
     if (task.value?.task_type !== 'compare') return
     if (task.value?.status === 'success' && !hasResult.value) {
-      // 解析成功且尚未审核：自动执行比对审核
+      // 解析成功且尚未审核：自动执行标准页审核
       runAudit()
     } else if (task.value?.status === 'processing' || task.value?.status === 'pending') {
       // 解析进行中：轮询任务状态，成功后自动执行审核
@@ -432,6 +454,39 @@ onBeforeUnmount(clearPoll)
 .result-tabs :deep(.el-tabs__item) {
   font-size: 15px;
   font-weight: 600;
+}
+
+/* 查看版面 */
+.layout-card {
+  padding: 22px 26px;
+  overflow-x: auto;
+}
+
+.layout-content {
+  font-size: 13.5px;
+  color: var(--ink-900);
+  line-height: 1.8;
+}
+
+.layout-content :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  background: #fff;
+}
+
+.layout-content :deep(th),
+.layout-content :deep(td) {
+  border: 1px solid #e6e9f2;
+  padding: 8px 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.layout-content :deep(th) {
+  background: #f7f8fd;
+  font-weight: 600;
+  color: var(--ink-600);
 }
 
 .head-left {

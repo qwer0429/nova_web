@@ -3,7 +3,7 @@
     <!-- 页面标题区 -->
     <div class="page-head">
       <div>
-        <h1 class="page-title">解析历史</h1>
+        <h1 class="page-title">审核历史</h1>
         <p class="page-desc">查看所有解析任务的状态与结果，支持按关键词、状态、类型和时间筛选</p>
       </div>
       <el-button type="primary" :icon="Upload" size="large" @click="goNew">上传文件</el-button>
