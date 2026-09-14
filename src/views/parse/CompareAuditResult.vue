@@ -1,91 +1,43 @@
 <template>
   <div class="compare-audit-result">
-    <!-- 页面标题区 -->
-    <div class="page-head">
-      <div class="head-left">
-        <div class="back-btn" @click="goBack">
-          <el-icon :size="16"><Back /></el-icon>
+    <!-- 吸顶区：页面标题 + 结果切换 -->
+    <div class="sticky-head">
+      <!-- 页面标题区 -->
+      <div class="page-head">
+        <div class="head-left">
+          <div class="back-btn" @click="goBack">
+            <el-icon :size="16"><Back /></el-icon>
+          </div>
+          <div>
+            <h1 class="page-title">标准页审核结果</h1>
+            <p class="page-desc">
+              {{ task?.file_name || '加载中…' }}<template v-if="task?.file_name"> · </template>任务ID：{{ taskId }}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="page-title">标准页审核结果</h1>
-          <p class="page-desc">
-            {{ task?.file_name || '加载中…' }}<template v-if="task?.file_name"> · </template>任务ID：{{ taskId }}
-          </p>
-        </div>
+        <el-button
+          type="primary"
+          :icon="VideoPlay"
+          :loading="busy"
+          :disabled="!!task && !canRunAudit"
+          @click="runAudit"
+        >
+          {{ hasResult ? '重新执行审核' : '执行审核' }}
+        </el-button>
       </div>
-      <el-button
-        type="primary"
-        :icon="VideoPlay"
-        :loading="auditing"
-        :disabled="!!task && task.status !== 'success'"
-        @click="runAudit"
-      >
-        {{ hasResult ? '重新执行审核' : '执行审核' }}
-      </el-button>
-    </div>
 
-    <!-- 结果切换：审核结果 / 查看版面（解析结果标签页暂时隐藏） -->
-    <el-tabs v-model="activeTab" class="result-tabs" @tab-click="onTabClick">
-      <el-tab-pane label="审核结果" name="audit" />
-      <el-tab-pane label="查看版面" name="layout" />
-      <!-- <el-tab-pane label="解析结果" name="parse" /> -->
-    </el-tabs>
+      <!-- 结果切换：审核结果 / 查看版面（解析结果标签页暂时隐藏） -->
+      <el-tabs v-model="activeTab" class="result-tabs" @tab-click="onTabClick">
+        <el-tab-pane label="审核结果" name="audit" />
+        <el-tab-pane label="查看版面" name="layout" />
+        <!-- <el-tab-pane label="解析结果" name="parse" /> -->
+      </el-tabs>
+    </div>
 
     <!-- 查看版面：渲染 task.table_json_to_html_fix，无值时回退 table_json_to_html -->
     <div v-show="activeTab === 'layout'" class="page-card layout-card">
       <div v-if="layoutHtml" class="layout-content" v-html="layoutHtml"></div>
       <el-empty v-else description="暂无版面数据" :image-size="100" />
-    </div>
-
-    <!-- 任务信息卡 -->
-    <div v-show="activeTab === 'audit'" v-loading="loading" class="page-card info-card">
-      <el-skeleton v-if="loading && !task" :rows="3" animated />
-      <template v-else-if="task">
-        <div class="task-bar">
-          <div class="task-file">
-            <div class="file-icon">
-              <el-icon :size="18"><Folder /></el-icon>
-            </div>
-            <span class="file-name">{{ task.file_name || '未命名文件' }}</span>
-          </div>
-          <div class="task-meta">
-            <el-tag effect="light">{{ task.task_type_display || '-' }}</el-tag>
-            <el-tag :type="statusMeta.tagType" effect="light">
-              {{ task.status_display || statusMeta.label }}
-            </el-tag>
-            <span class="meta-item">创建时间：{{ task.created_at || '-' }}</span>
-          </div>
-        </div>
-
-        <div class="bar-divider"></div>
-
-        <!-- 总体审核结论 -->
-        <div class="overall-row">
-          <span class="overall-label">总体审核结论</span>
-          <span v-if="overallResult" class="overall-badge" :class="`is-${resultClass(overallResult)}`">
-            <el-icon :size="18">
-              <CircleCheckFilled v-if="overallResult === '合格'" />
-              <WarningFilled v-else-if="overallResult === '存疑'" />
-              <CircleCloseFilled v-else-if="overallResult === '不合格'" />
-              <QuestionFilled v-else />
-            </el-icon>
-            {{ overallResult }}
-          </span>
-          <span v-else class="overall-none">尚未审核</span>
-          <span class="overall-hint">（不合格或缺失 → 不合格；存疑或无法判定 → 存疑；否则合格）</span>
-        </div>
-
-        <!-- 统计 -->
-        <div v-if="stats" class="stats-row">
-          <span class="stat-chip is-total">总数 {{ stats.总数 ?? 0 }}</span>
-          <span class="stat-chip is-pass">合格 {{ stats.合格 ?? 0 }}</span>
-          <span class="stat-chip is-fail">不合格 {{ stats.不合格 ?? 0 }}</span>
-          <span class="stat-chip is-fail">缺失 {{ stats.缺失 ?? 0 }}</span>
-          <span class="stat-chip is-warn">存疑 {{ stats.存疑 ?? 0 }}</span>
-          <span class="stat-chip is-none">无法判定 {{ stats.无法判定 ?? 0 }}</span>
-        </div>
-      </template>
-      <el-empty v-else description="未找到该任务" :image-size="90" />
     </div>
 
     <!-- 审核结果区：左原文件，右审核结果 -->
@@ -98,27 +50,38 @@
       <!-- 原文件 -->
       <div class="file-pane page-card">
         <div class="pane-title">原文件</div>
+        <p v-if="isImageFile && canLocate" class="pane-tip">
+          点击右侧卡片头部的定位按钮可高亮整行，点击项目名 / 规定值 / 实测值可精确高亮对应单元格
+        </p>
         <template v-if="fileSrc">
-          <el-image
-            v-if="isImageFile"
-            :src="fileSrc"
-            :preview-src-list="[fileSrc]"
-            preview-teleported
-            fit="contain"
-            class="file-img"
-          >
-            <template #error>
-              <div class="file-placeholder">
-                <el-icon :size="28"><Picture /></el-icon>
-                <span>图片加载失败</span>
-              </div>
-            </template>
-            <template #placeholder>
-              <div class="file-placeholder">
-                <el-icon :size="28" class="is-loading"><Loading /></el-icon>
-              </div>
-            </template>
-          </el-image>
+          <div v-if="isImageFile" class="file-stage">
+            <el-image
+              :src="fileSrc"
+              :preview-src-list="[fileSrc]"
+              preview-teleported
+              fit="contain"
+              class="file-img"
+              @load="onImgLoad"
+            >
+              <template #error>
+                <div class="file-placeholder">
+                  <el-icon :size="28"><Picture /></el-icon>
+                  <span>图片加载失败</span>
+                </div>
+              </template>
+              <template #placeholder>
+                <div class="file-placeholder">
+                  <el-icon :size="28" class="is-loading"><Loading /></el-icon>
+                </div>
+              </template>
+            </el-image>
+            <div
+              v-for="(box, bi) in highlightBoxes"
+              :key="bi"
+              class="hl-box"
+              :style="box"
+            ></div>
+          </div>
           <iframe v-else-if="isPdfFile" :src="fileSrc" class="file-pdf" title="原文件"></iframe>
           <div v-else class="file-placeholder">
             <el-icon :size="28"><Document /></el-icon>
@@ -134,6 +97,57 @@
 
       <!-- 审核结果 -->
       <div class="result-pane">
+        <!-- 任务信息卡（含总体结论与统计） -->
+        <div v-loading="loading" class="page-card info-card">
+          <el-skeleton v-if="loading && !task" :rows="3" animated />
+          <template v-else-if="task">
+            <div class="task-bar">
+              <div class="task-file">
+                <div class="file-icon">
+                  <el-icon :size="18"><Folder /></el-icon>
+                </div>
+                <span class="file-name">{{ task.file_name || '未命名文件' }}</span>
+              </div>
+              <div class="task-meta">
+                <el-tag effect="light">{{ task.task_type_display || '-' }}</el-tag>
+                <el-tag :type="statusMeta.tagType" effect="light">
+                  {{ task.status_display || statusMeta.label }}
+                </el-tag>
+                <span class="meta-item">创建时间：{{ task.created_at || '-' }}</span>
+              </div>
+            </div>
+
+            <div class="bar-divider"></div>
+
+            <!-- 总体审核结论 -->
+            <div class="overall-row">
+              <span class="overall-label">总体审核结论</span>
+              <span v-if="overallResult" class="overall-badge" :class="`is-${resultClass(overallResult)}`">
+                <el-icon :size="18">
+                  <CircleCheckFilled v-if="overallResult === '合格'" />
+                  <WarningFilled v-else-if="overallResult === '存疑'" />
+                  <CircleCloseFilled v-else-if="overallResult === '不合格'" />
+                  <QuestionFilled v-else />
+                </el-icon>
+                {{ overallResult }}
+              </span>
+              <span v-else class="overall-none">尚未审核</span>
+              <span class="overall-hint">（不合格或缺失 → 不合格；存疑或无法判定 → 存疑；否则合格）</span>
+            </div>
+
+            <!-- 统计 -->
+            <div v-if="stats" class="stats-row">
+              <span class="stat-chip is-total">总数 {{ stats.总数 ?? 0 }}</span>
+              <span class="stat-chip is-pass">合格 {{ stats.合格 ?? 0 }}</span>
+              <span class="stat-chip is-fail">不合格 {{ stats.不合格 ?? 0 }}</span>
+              <span class="stat-chip is-fail">缺失 {{ stats.缺失 ?? 0 }}</span>
+              <span class="stat-chip is-warn">存疑 {{ stats.存疑 ?? 0 }}</span>
+              <span class="stat-chip is-none">无法判定 {{ stats.无法判定 ?? 0 }}</span>
+            </div>
+          </template>
+          <el-empty v-else description="未找到该任务" :image-size="90" />
+        </div>
+
         <template v-if="!loading">
           <!-- 尚未审核 -->
           <div v-if="!hasResult" class="page-card empty-card">
@@ -142,7 +156,7 @@
               :image-size="110"
             >
               <el-button
-                v-if="task?.status === 'success'"
+                v-if="canRunAudit"
                 type="primary"
                 :icon="VideoPlay"
                 :loading="auditing"
@@ -173,8 +187,23 @@
             <div v-for="(item, idx) in filteredItems" :key="idx" class="page-card audit-item">
               <div class="item-head">
                 <span class="item-index">#{{ idx + 1 }}</span>
-                <span class="item-name">{{ item.项目 || '未命名项目' }}</span>
+                <span
+                  class="item-name locatable"
+                  :class="{ 'is-active': isTextActive(item, item.项目) }"
+                  @click="locateText(item, item.项目)"
+                >
+                  {{ item.项目 || '未命名项目' }}
+                </span>
                 <span v-if="locationText(item)" class="item-loc">{{ locationText(item) }}</span>
+                <span
+                  v-if="hasRowCells(item)"
+                  class="locate-btn"
+                  :class="{ 'is-active': isRowActive(item) }"
+                  @click="locateRow(item)"
+                >
+                  <el-icon :size="13"><Position /></el-icon>
+                  定位
+                </span>
                 <el-tag
                   :type="verdictTagType(item.判定)"
                   effect="dark"
@@ -193,7 +222,15 @@
                   </tr>
                   <tr>
                     <td class="kv-key">规定值</td>
-                    <td class="cell-left">{{ item.规定值 || '-' }}</td>
+                    <td class="cell-left">
+                      <span
+                        class="locatable"
+                        :class="{ 'is-active': isTextActive(item, item.规定值) }"
+                        @click="locateText(item, item.规定值)"
+                      >
+                        {{ item.规定值 || '-' }}
+                      </span>
+                    </td>
                   </tr>
                   <tr v-if="item.判断依据">
                     <td class="kv-key">判断依据</td>
@@ -206,7 +243,9 @@
                         <span
                           v-for="(m, mi) in item.实测值列表"
                           :key="mi"
-                          class="value-chip"
+                          class="value-chip locatable"
+                          :class="{ 'is-active': isMeasuredActive(item, mi) }"
+                          @click="locateMeasured(item, m, mi)"
                         >
                           <span v-if="m.标签" class="value-label">{{ m.标签 }}</span>
                           {{ m.值 ?? '-' }}
@@ -260,7 +299,8 @@ import {
   CircleCheckFilled,
   CircleCloseFilled,
   WarningFilled,
-  QuestionFilled
+  QuestionFilled,
+  Position
 } from '@element-plus/icons-vue'
 import request from '../../api/request'
 import { ensureCompareAudit } from '../../api/audit'
@@ -282,6 +322,9 @@ function onTabClick(tab) {
 
 const loading = ref(false)
 const auditing = ref(false)
+
+// 本页执行的审核或后端状态为审核中（可能由其他入口触发）都视为审核进行中
+const busy = computed(() => auditing.value || task.value?.status === 'auditing')
 
 const task = ref(null)
 const auditResult = ref(null)
@@ -319,13 +362,22 @@ const filteredItems = computed(() =>
     : items.value
 )
 
+// 可执行审核：success 正常执行；failed 允许重试（解析失败时后端会返回明确错误）；
+// pending/processing/auditing 进行中禁用
+const canRunAudit = computed(() => {
+  if (!task.value) return false
+  return !['pending', 'processing', 'auditing'].includes(task.value.status)
+})
+
 const emptyDesc = computed(() => {
-  if (auditing.value) return '正在执行标准页审核，请稍候…'
+  if (busy.value) return '正在执行标准页审核，请稍候…'
   if (!task.value) return '未找到该任务'
   if (task.value.status === 'processing' || task.value.status === 'pending') {
     return '文档解析中，解析成功后将自动执行标准页审核'
   }
-  if (task.value.status === 'failed') return '文档解析失败，无法执行审核'
+  if (task.value.status === 'failed') {
+    return '任务执行失败，可点击「执行审核」重试；若文档解析本身失败请重新上传'
+  }
   return '该任务尚未执行标准页审核'
 })
 
@@ -344,6 +396,222 @@ const fileExt = computed(() => {
 const isImageFile = computed(() => ['jpg', 'jpeg', 'png', 'bmp', 'webp'].includes(fileExt.value))
 
 const isPdfFile = computed(() => fileExt.value === 'pdf')
+
+// ---------- 原文件区域高亮定位 ----------
+// 优先使用审核结果中 定位.单元格 自带的原图坐标；
+// 缺失时回退到后端 table_json_to_merged_cells_fix（按子表分组的合并单元格列表，
+// 每项 { text, x, y, h, w }，坐标为原图像素）做全文文本匹配
+const mergedCells = computed(() => {
+  const field = task.value?.table_json_to_merged_cells_fix
+  if (!Array.isArray(field)) return []
+  return field.flat().filter((c) => c && typeof c === 'object')
+})
+
+const imgNatural = ref(null) // { w, h } 原图自然尺寸
+const highlightedCells = ref([])
+const lastLocateKey = ref('')
+
+// 是否存在可用于定位高亮的数据：审核结果自带坐标，或全文合并单元格
+const canLocate = computed(
+  () => mergedCells.value.length > 0 || items.value.some((it) => hasRowCells(it))
+)
+
+function onImgLoad(e) {
+  const img = e.target
+  if (img?.naturalWidth && img?.naturalHeight) {
+    imgNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
+  }
+}
+
+function normText(s) {
+  return String(s ?? '').replace(/\s+/g, '')
+}
+
+function matchCells(cells, t) {
+  const exact = cells.filter((c) => normText(c.text) === t)
+  return exact.length
+    ? exact
+    : cells.filter((c) => {
+        const ct = normText(c.text)
+        return ct && (ct.includes(t) || t.includes(ct))
+      })
+}
+
+// 审核结果自带的行级定位：定位.单元格 为该行所有单元格（含原图坐标）
+function rowCellsOf(item) {
+  const cells = item?.定位?.单元格
+  return Array.isArray(cells)
+    ? cells.filter((c) => c && typeof c === 'object' && c.w > 0 && c.h > 0)
+    : []
+}
+
+function hasRowCells(item) {
+  return rowCellsOf(item).length > 0
+}
+
+// 行内单元格按 x 排序后，末尾 N 个（N=实测值列表长度）即实测值列（X/Y/Z…），
+// 之前的为项目/单位/规定值等列。单元格 OCR 文本常带噪声（如 'Z -10~+10'、
+// '-10~+10 -10'），规定值与实测值同文本时纯文本匹配会错位，故按位置划分
+function splitRowCells(item) {
+  const cells = rowCellsOf(item)
+    .slice()
+    .sort((a, b) => a.x - b.x)
+  const n = (item?.实测值列表 || []).length
+  if (n > 0 && cells.length > n) {
+    return { rest: cells.slice(0, cells.length - n), measured: cells.slice(cells.length - n) }
+  }
+  return { rest: cells, measured: [] }
+}
+
+// 多个匹配时用锚点文本（项目名/样品号）定位到同一行带：
+// 优先 y 区间重叠（同一表格行），否则取垂直中心距离最近的一个
+function pickBest(matched, allCells, anchorText) {
+  if (matched.length === 1) return matched[0]
+  if (anchorText) {
+    const anchor = allCells.find((c) => normText(c.text) === anchorText)
+    if (anchor) {
+      const aBottom = anchor.y + anchor.h
+      const overlap = matched.filter((c) => c.y < aBottom && c.y + c.h > anchor.y)
+      if (overlap.length) return overlap[0]
+      const aMid = anchor.y + anchor.h / 2
+      return matched
+        .slice()
+        .sort((m, n) => Math.abs(m.y + m.h / 2 - aMid) - Math.abs(n.y + n.h / 2 - aMid))[0]
+    }
+  }
+  return matched[0]
+}
+
+function locateKey(item, text) {
+  return `${normText(item?.项目)}|${normText(text)}`
+}
+
+function measuredKey(item, mi) {
+  return `${normText(item?.项目)}|m${mi}`
+}
+
+// 再次点击同一目标：取消高亮
+function toggleHighlight(key, cells) {
+  if (lastLocateKey.value === key && highlightedCells.value.length) {
+    highlightedCells.value = []
+    lastLocateKey.value = ''
+    return
+  }
+  highlightedCells.value = cells
+  lastLocateKey.value = key
+}
+
+function isTextActive(item, text) {
+  return (
+    highlightedCells.value.length > 0 && lastLocateKey.value === locateKey(item, text)
+  )
+}
+
+function isMeasuredActive(item, mi) {
+  return (
+    highlightedCells.value.length > 0 && lastLocateKey.value === measuredKey(item, mi)
+  )
+}
+
+function isRowActive(item) {
+  return (
+    highlightedCells.value.length > 0 && lastLocateKey.value === locateKey(item, '__row__')
+  )
+}
+
+// 点击卡片头部的定位按钮：高亮该行单元格（不含单位列，只定位项目/规定值/实测值区域）
+function locateRow(item) {
+  const cells = rowCellsOf(item)
+  if (!cells.length) {
+    ElMessage.info('该审核项没有可用的定位信息')
+    return
+  }
+  const unit = normText(item?.单位)
+  const visible = unit ? cells.filter((c) => normText(c.text) !== unit) : cells
+  toggleHighlight(locateKey(item, '__row__'), visible.length ? visible : cells)
+}
+
+// 无定位坐标时的回退：在全文合并单元格中做文本匹配
+function locateInMergedCells(key, t, anchorText) {
+  if (lastLocateKey.value === key && highlightedCells.value.length) {
+    highlightedCells.value = []
+    lastLocateKey.value = ''
+    return
+  }
+  const matched = matchCells(mergedCells.value, t)
+  if (!matched.length) {
+    ElMessage.info('未在原文件中定位到对应区域')
+    return
+  }
+  highlightedCells.value = [pickBest(matched, mergedCells.value, anchorText)]
+  lastLocateKey.value = key
+}
+
+// 点击实测值：坐标唯一，只高亮对应的那一个单元格。
+// 优先按列位置映射：行内末尾 N 个单元格即 X/Y/Z… 实测值列，与实测值列表一一对应；
+// 无法按位置划分时回退为文本匹配，同值多次出现按出现次序对应 x 升序次序
+function locateMeasured(item, m, mi) {
+  const t = normText(m?.值)
+  if (!t || t === '-') return
+  const key = measuredKey(item, mi)
+  const { measured } = splitRowCells(item)
+  if (measured.length) {
+    toggleHighlight(key, [measured[Math.min(mi, measured.length - 1)]])
+    return
+  }
+  const rowCells = rowCellsOf(item)
+  if (rowCells.length) {
+    const matched = matchCells(rowCells, t)
+      .slice()
+      .sort((a, b) => a.x - b.x)
+    if (!matched.length) {
+      // 行内没有匹配文本时，高亮整行
+      toggleHighlight(key, rowCells)
+      return
+    }
+    const sameVal = (item.实测值列表 || []).filter((e) => normText(e?.值) === t)
+    const occ = Math.max(0, sameVal.indexOf(m))
+    toggleHighlight(key, [matched[Math.min(occ, matched.length - 1)]])
+    return
+  }
+  locateInMergedCells(key, t, normText(item?.项目))
+}
+
+// 点击项目名/规定值：只在实测值列左侧的单元格中匹配（规定值与实测值同文本时
+// 避免命中实测值列），多个匹配取最左侧的一个；匹配不到时高亮整行
+function locateText(item, text) {
+  const t = normText(text)
+  if (!t || t === '-') return
+  const key = locateKey(item, text)
+  const rowCells = rowCellsOf(item)
+  if (rowCells.length) {
+    const { rest } = splitRowCells(item)
+    const matched = matchCells(rest.length ? rest : rowCells, t)
+      .slice()
+      .sort((a, b) => a.x - b.x)
+    if (matched.length) {
+      toggleHighlight(key, [matched[0]])
+      return
+    }
+    const any = matchCells(rowCells, t)
+      .slice()
+      .sort((a, b) => a.x - b.x)
+    toggleHighlight(key, any.length ? [any[0]] : rowCells)
+    return
+  }
+  locateInMergedCells(key, t, normText(item?.项目))
+}
+
+const highlightBoxes = computed(() => {
+  const nat = imgNatural.value
+  if (!nat) return []
+  return highlightedCells.value.map((c) => ({
+    left: `${((c.x || 0) / nat.w) * 100}%`,
+    top: `${((c.y || 0) / nat.h) * 100}%`,
+    width: `${((c.w || 0) / nat.w) * 100}%`,
+    height: `${((c.h || 0) / nat.h) * 100}%`
+  }))
+})
 
 function verdictCount(v) {
   return items.value.filter((it) => it?.判定 === v).length
@@ -396,11 +664,12 @@ async function loadAll() {
     auditResult.value = data.task?.audit_result || null
     loading.value = false
     if (task.value?.task_type !== 'compare') return
-    if (task.value?.status === 'success' && !hasResult.value) {
-      // 解析成功且尚未审核：自动执行标准页审核
+    const st = task.value?.status
+    if (st === 'success' && !hasResult.value) {
+      // 历史遗留任务（后端自动审核上线前就已 success 但无结果）：进入页面时补触发一次
       runAudit()
-    } else if (task.value?.status === 'processing' || task.value?.status === 'pending') {
-      // 解析进行中：轮询任务状态，成功后自动执行审核
+    } else if (st === 'processing' || st === 'pending' || st === 'auditing') {
+      // 解析/审核进行中（解析完成后由后端自动执行审核）：轮询等待结果
       clearPoll()
       pollTimer = setTimeout(loadAll, 5000)
     }
@@ -418,9 +687,19 @@ async function runAudit() {
     // 审核可能较慢，单独放大超时时间
     const { data } = await ensureCompareAudit(taskId)
     auditResult.value = data.audit_result || null
+    // 后端审核期间会把任务状态置 auditing，完成后置 success/failed，本地同步
+    if (task.value) task.value.status = 'success'
     ElMessage.success(`审核完成，总体结论：${data.audit_result?.总体结论 || '-'}`)
   } catch (e) {
-    ElMessage.error(e.response?.data?.detail || '执行审核失败，请稍后重试')
+    if (e.response?.status === 409) {
+      // 后端自动审核或其他入口正在执行：转入轮询等待结果
+      ElMessage.info(e.response?.data?.detail || '该任务正在审核中')
+      clearPoll()
+      pollTimer = setTimeout(loadAll, 5000)
+    } else {
+      if (task.value) task.value.status = 'failed'
+      ElMessage.error(e.response?.data?.detail || '执行审核失败，请稍后重试')
+    }
   } finally {
     auditing.value = false
   }
@@ -447,8 +726,20 @@ onBeforeUnmount(clearPoll)
   margin-bottom: 8px;
 }
 
+/* 吸顶区：标题 + 标签页，滚动时固定在内容区顶部 */
+.sticky-head {
+  position: sticky;
+  top: -24px;
+  z-index: 20;
+  margin: -24px -26px 16px;
+  padding: 12px 26px 0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #eceef6;
+}
+
 .result-tabs {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .result-tabs :deep(.el-tabs__item) {
@@ -711,11 +1002,12 @@ onBeforeUnmount(clearPoll)
 }
 
 .file-pane {
-  flex: 0 0 70%;
+  flex: 0 0 55%;
   min-width: 0;
   padding: 16px 18px;
   position: sticky;
-  top: 16px;
+  /* 避开吸顶标题区（约 130px 高） */
+  top: 130px;
 }
 
 .pane-title {
@@ -723,6 +1015,82 @@ onBeforeUnmount(clearPoll)
   font-weight: 700;
   color: var(--ink-900);
   margin-bottom: 12px;
+}
+
+.pane-tip {
+  margin: -6px 0 12px;
+  font-size: 12px;
+  color: var(--ink-300);
+}
+
+.file-stage {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hl-box {
+  position: absolute;
+  border: 2px solid #f5222d;
+  background: rgba(245, 34, 45, 0.14);
+  border-radius: 4px;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation: hl-flash 0.9s ease-out;
+}
+
+@keyframes hl-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 34, 45, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(245, 34, 45, 0);
+  }
+}
+
+.locatable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.locatable:hover {
+  color: var(--brand-500);
+  border-color: var(--brand-500);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.locatable.is-active {
+  color: var(--brand-500);
+  border-color: var(--brand-500);
+  background: #eef2ff;
+}
+
+.locate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-500);
+  background: #f4f6ff;
+  border: 1px solid #e3e8fb;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.locate-btn:hover {
+  border-color: var(--brand-500);
+  box-shadow: 0 4px 10px -4px rgba(79, 110, 247, 0.45);
+}
+
+.locate-btn.is-active {
+  color: #fff;
+  background: var(--brand-500);
+  border-color: var(--brand-500);
 }
 
 .file-img {

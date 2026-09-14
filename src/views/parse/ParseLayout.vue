@@ -117,7 +117,8 @@ function onCommand(cmd) {
 <style scoped>
 .parse-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #f4f6fc;
 }
 
@@ -125,6 +126,9 @@ function onCommand(cmd) {
 .sider {
   width: 208px;
   flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(10px);
   border-right: 1px solid #eceef6;
@@ -345,6 +349,8 @@ function onCommand(cmd) {
 
 .content {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 24px 26px 36px;
   background:
     radial-gradient(ellipse 45% 32% at 88% -4%, rgba(124, 92, 255, 0.08), transparent 70%),

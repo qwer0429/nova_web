@@ -201,7 +201,9 @@ async function loadTasks(silent = false) {
 // 存在进行中任务时每 10 秒自动刷新
 function scheduleRefresh() {
   clearTimer()
-  const hasActive = list.value.some((t) => t.status === 'processing' || t.status === 'pending')
+  const hasActive = list.value.some(
+    (t) => t.status === 'processing' || t.status === 'pending' || t.status === 'auditing'
+  )
   if (hasActive) {
     refreshTimer = setInterval(() => loadTasks(true), 10000)
   }

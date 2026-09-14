@@ -23,14 +23,16 @@ export const TASK_TYPES = [
 export const STATUS_META = {
   pending: { label: '等待中', color: '#909399', tagType: 'info' },
   processing: { label: '解析中', color: '#409eff', tagType: 'primary' },
-  success: { label: '解析成功', color: '#67c23a', tagType: 'success' },
-  failed: { label: '解析失败', color: '#f56c6c', tagType: 'danger' }
+  auditing: { label: '审核中', color: '#e6a23c', tagType: 'warning' },
+  success: { label: '成功', color: '#67c23a', tagType: 'success' },
+  failed: { label: '失败', color: '#f56c6c', tagType: 'danger' }
 }
 
 export const STATUS_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'pending', label: '等待中' },
   { value: 'processing', label: '解析中' },
-  { value: 'success', label: '解析成功' },
-  { value: 'failed', label: '解析失败' }
+  { value: 'auditing', label: '审核中' },
+  { value: 'success', label: '成功' },
+  { value: 'failed', label: '失败' }
 ]

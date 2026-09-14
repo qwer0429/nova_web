@@ -2,8 +2,9 @@
 const STATUS_DISPLAY = {
   pending: '等待中',
   processing: '解析中',
-  success: '解析成功',
-  failed: '解析失败'
+  auditing: '审核中',
+  success: '成功',
+  failed: '失败'
 }
 
 const TYPE_DISPLAY = {
@@ -305,8 +306,8 @@ async function handle(config) {
       detail.dp_tables = sampleDpTables(detail)
       // 版面还原数据：任务 1 返回完整试验报告版面，其余 success 任务给简单版面
       detail.dp_layout = detail.id === 1 ? reportLayout() : simpleLayout(detail)
-      // 标准页审核任务的「查看版面」数据：部分任务只有未修正版本，演示回退逻辑
-      if (detail.task_type === 'compare') {
+      // 「查看版面」数据：部分任务只有未修正版本，演示回退逻辑
+      if (detail.task_type === 'compare' || detail.task_type === 'single_page') {
         detail.table_json_to_html_fix = detail.id % 2 ? layoutHtmlFix() : ''
         detail.table_json_to_html = layoutHtmlRaw()
       }
@@ -351,9 +352,73 @@ async function handle(config) {
     }, 200, config)
   }
 
-  // 报告单审核触发
+  // 报告单审核触发：返回任务级审核结果（composition_result / seal_result / result）
   if (method === 'post' && path === '/api/dp/single-page/audit/') {
-    return ok({ result: '通过', pages: [] }, 200, config)
+    let taskId = null
+    try {
+      taskId = JSON.parse(config.data || '{}').id ?? null
+    } catch {
+      taskId = null
+    }
+    const auditResult = {
+      composition_result: {
+        audit_item: 'AUDIT-S01 数据审核',
+        审核单元: [
+          {
+            样品: 'φ38',
+            元素: 'C',
+            标准值: '0.37~0.44',
+            实测值: '0.40',
+            判定: '合格',
+            依据: '区间[0.37, 0.44]，实测值 0.40 落在区间内',
+            定位: { 单元格: [] }
+          },
+          {
+            样品: 'φ38',
+            元素: 'Si',
+            标准值: '0.17~0.37',
+            实测值: '0.45',
+            判定: '不合格',
+            依据: '区间[0.17, 0.37]，实测值 0.45 超出区间上限',
+            定位: { 单元格: [] }
+          },
+          {
+            样品: 'φ39',
+            元素: 'Mn',
+            标准值: '0.50~0.80',
+            实测值: '',
+            判定: '无法判定',
+            依据: '实测值缺失，无法进行区间比对',
+            定位: { 单元格: [] }
+          }
+        ],
+        统计: { 总数: 3, 合格: 1, 不合格: 1, 无法判定: 1 },
+        result: '不通过',
+        reason: '1 个审核单元实测值超出标准值区间'
+      },
+      seal_result: {
+        audit_item: 'AUDIT-S02 签章审核',
+        found_seals: [
+          { via: 'vlm', text: '检验检测专用章', position: '区域内', bbox_norm: [0.62, 0.82, 0.2, 0.09] }
+        ],
+        filtered_seals: [
+          {
+            via: 'vlm+vlm_crop',
+            text: '某某科技有限公司',
+            position: '区域外',
+            filter_reason: '位于判定列区域外',
+            bbox_norm: [0.08, 0.88, 0.16, 0.07]
+          }
+        ],
+        notes: ['章面文字由裁剪精读识别'],
+        vlm_detection: { has_seal: true, seals: [], seal_texts: [] },
+        audit_region: [0.55, 0.75, 0.4, 0.2],
+        result: '通过',
+        reason: '判定列区域内检测到 1 处签章'
+      },
+      result: '不通过'
+    }
+    return ok({ id: taskId, result: auditResult.result, audit_result: auditResult }, 200, config)
   }
 
   fail({ detail: `Mock 未实现的接口: ${method.toUpperCase()} ${path}` }, 404, config)
